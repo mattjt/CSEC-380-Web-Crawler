@@ -23,7 +23,7 @@ def follow_redirect(response, method, headers, data, redirect_count):
 def response_handler(response, redirect_count=None):
     # Check if the response we got was a redirect
     if FOLLOW_REDIRECTS and int(response[1].status_code) in REDIRECT_STATUS_CODES:
-        follow_redirect(response[1], response[0].method, response[0].headers, response[0].data, redirect_count)
+        return follow_redirect(response[1], response[0].method, response[0].headers, response[0].data, redirect_count)
     else:
         return response[1]
 

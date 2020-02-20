@@ -1,6 +1,22 @@
 # author: Matthew Turi <mxt9495@rit.edu>
 import socket
-import time
+import ssl
+from urllib.parse import ParseResult
+
+REDIRECT_STATUS_CODES = [301, 302, 307, 308]
+MAX_REDIRECTS = 4
+
+
+class MaxRedirectsExceededError(Exception):
+    def __str__(self):
+        return 'MaxRedirectsExceededError: The requested URI has exceeded {0} redirects'.format(MAX_REDIRECTS)
+
+
+class URI:
+    def __init__(self, uri, port):
+        assert isinstance(uri, ParseResult)
+        self.parsed = uri
+        self.port = port
 
 
 class HTTPResponse:
@@ -58,22 +74,24 @@ class HTTPRequest:
     Abstracted representation of an HTTP request
     """
 
-    def __init__(self, hostname, port, method, uri, headers=None, data=None):
+    def __init__(self, uri, method, headers=None, data=None):
         if headers is None:
             headers = {}
         if data is None:
             data = {}
-        self.host = hostname
-        self.port = port
-        self.method = method
+
+        # Sanity check that we actually got a URI
+        assert isinstance(uri, URI)
+
         self.uri = uri
+        self.method = method
         self.response = ""
         self.headers = headers
         self.data = data
 
     def __repr__(self):
-        request = "{0} {1} HTTP/1.1\r\n".format(self.method, self.uri)
-        request += "Host: {0}:{1}\r\n".format(self.host, self.port)
+        request = "{0} {1} HTTP/1.1\r\n".format(self.method, self.uri.parsed.path)
+        request += "Host: {0}\r\n".format(self.uri.parsed.netloc)
 
         for header, value in self.headers.items():
             request += "{0}: {1}\r\n".format(header, value)
@@ -98,13 +116,25 @@ class HTTPRequest:
         Sends the HTTP request
         """
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.connect((self.host, self.port))
+            # s.connect((self.uri.parsed.netloc, self.uri.port))
+            s.connect(("127.0.0.1", 8080))
+            if self.uri.port == 443 or self.uri.parsed.scheme == "https":
+                s = ssl.wrap_socket(s, keyfile=None, certfile=None, server_side=False, cert_reqs=ssl.CERT_NONE,
+                                    ssl_version=ssl.PROTOCOL_SSLv23)
+
             s.send(bytes(self.__repr__(), "utf-8"))
 
             # Wait before receiving response because this was being buggy and not getting all the data previously
-            time.sleep(0.25)
+            # time.sleep(0.25)  # TODO MAYBE DONT BREAK THINGS PLS
 
-            self.response = s.recv(4096)
+            fragments = []
+            while True:
+                chunk = s.recv(10000)
+                if not chunk:
+                    break
+                fragments.append(chunk)
+
+            self.response = b"".join(fragments)
             self.response = HTTPResponse(self.response)
 
-        return self.response
+        return [self, self.response]

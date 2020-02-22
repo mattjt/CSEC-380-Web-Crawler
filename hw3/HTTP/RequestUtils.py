@@ -116,16 +116,12 @@ class HTTPRequest:
         Sends the HTTP request
         """
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            # s.connect((self.uri.parsed.netloc, self.uri.port))
-            s.connect(("127.0.0.1", 8080))
+            s.connect((self.uri.parsed.netloc, self.uri.port))
             if self.uri.port == 443 or self.uri.parsed.scheme == "https":
                 s = ssl.wrap_socket(s, keyfile=None, certfile=None, server_side=False, cert_reqs=ssl.CERT_NONE,
                                     ssl_version=ssl.PROTOCOL_SSLv23)
 
             s.send(bytes(self.__repr__(), "utf-8"))
-
-            # Wait before receiving response because this was being buggy and not getting all the data previously
-            # time.sleep(0.25)  # TODO MAYBE DONT BREAK THINGS PLS
 
             fragments = []
             while True:

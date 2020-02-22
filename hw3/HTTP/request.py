@@ -6,15 +6,18 @@ from HTTP.RequestUtils import HTTPRequest, URI, REDIRECT_STATUS_CODES, MaxRedire
 FOLLOW_REDIRECTS = True
 
 
-def follow_redirect(response, method, headers, data, redirect_count):
-    new_uri = response.headers.get("Location")
+def follow_redirect(orig_request, response, redirect_count):
+    new_path = response.headers.get("Location")
+    prev_path = orig_request.uri.parsed.path.rsplit("/", 1)[0]
+    new_uri = orig_request.uri.parsed.scheme + "://" + orig_request.uri.parsed.netloc + prev_path + "/" + new_path
 
     if redirect_count is None:
         redirect_count = 0
 
     if redirect_count <= MAX_REDIRECTS:
         redirect_count += 1
-        r = HTTPRequest(parse_uri(new_uri), method, headers=headers, data=data).send()
+        r = HTTPRequest(parse_uri(new_uri), orig_request.method, headers=orig_request.headers,
+                        data=orig_request.data).send()
         return response_handler(r, redirect_count=redirect_count)
     else:
         raise MaxRedirectsExceededError
@@ -23,7 +26,7 @@ def follow_redirect(response, method, headers, data, redirect_count):
 def response_handler(response, redirect_count=None):
     # Check if the response we got was a redirect
     if FOLLOW_REDIRECTS and int(response[1].status_code) in REDIRECT_STATUS_CODES:
-        return follow_redirect(response[1], response[0].method, response[0].headers, response[0].data, redirect_count)
+        return follow_redirect(response[0], response[1], redirect_count)
     else:
         return response[1]
 

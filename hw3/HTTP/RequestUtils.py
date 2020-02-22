@@ -40,10 +40,11 @@ class HTTPResponse:
 
         status_line_parsed = False
         for line in headers:
-            line = line.decode("utf-8")
+            # line = line.decode("utf-8")
 
             # status line
             if not status_line_parsed:
+                line = line.decode("utf-8")
                 status_line_parsed = True
                 tmp = line.split(" ")
                 self.http_version = tmp[0]
@@ -52,10 +53,11 @@ class HTTPResponse:
 
             # other header
             elif len(line) != 0:
+                line = line.decode("utf-8")
                 tmp = line.split(":", 1)
                 self.headers[tmp[0]] = tmp[1].strip()
 
-        self.data = body.decode("utf-8")
+        self.data = body
 
     def __repr__(self):
         response = "{0} {1} {2}\r\n".format(self.http_version, self.status_code, self.reason_phrase)
@@ -90,7 +92,11 @@ class HTTPRequest:
         self.data = data
 
     def __repr__(self):
-        request = "{0} {1} HTTP/1.1\r\n".format(self.method, self.uri.parsed.path)
+        if self.uri.parsed.query != '':
+            request = "{0} {1}?{2} HTTP/1.1\r\n".format(self.method, self.uri.parsed.path, self.uri.parsed.query)
+        else:
+            request = "{0} {1} HTTP/1.1\r\n".format(self.method, self.uri.parsed.path)
+
         request += "Host: {0}\r\n".format(self.uri.parsed.netloc)
 
         for header, value in self.headers.items():
@@ -117,6 +123,7 @@ class HTTPRequest:
         """
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.connect((self.uri.parsed.netloc, self.uri.port))
+            # s.connect(("127.0.0.1", 8080))  # TODO REMOVE BURP PROXY
             if self.uri.port == 443 or self.uri.parsed.scheme == "https":
                 s = ssl.wrap_socket(s, keyfile=None, certfile=None, server_side=False, cert_reqs=ssl.CERT_NONE,
                                     ssl_version=ssl.PROTOCOL_SSLv23)

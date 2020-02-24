@@ -3,8 +3,9 @@ import concurrent
 import csv
 import multiprocessing
 from concurrent.futures.thread import ThreadPoolExecutor
-from queue import Queue
 from datetime import datetime
+from queue import Queue
+
 from crawler import spawn_crawler, CrawlerMeta
 
 
@@ -41,6 +42,7 @@ def main():
 
         concurrent.futures.wait(threads)
     print("Finished crawl at {0}".format(datetime.now().strftime("%H:%M:%S")))
+
 
 if __name__ == '__main__':
     main()

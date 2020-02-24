@@ -126,6 +126,7 @@ class HTTPRequest:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.connect((self.uri.parsed.netloc, self.uri.port))
             # s.connect(("127.0.0.1", 8080))  # TODO REMOVE BURP PROXY
+            # s.settimeout(2)
             if self.uri.port == 443 or self.uri.parsed.scheme == "https":
                 s = ssl.wrap_socket(s, keyfile=None, certfile=None, server_side=False, cert_reqs=ssl.CERT_NONE,
                                     ssl_version=ssl.PROTOCOL_SSLv23)
@@ -134,10 +135,11 @@ class HTTPRequest:
 
             fragments = []
             while True:
-                chunk = s.recv(10000)
+                chunk = s.recv(1024)
                 if not chunk:
                     break
                 fragments.append(chunk)
+            s.close()
 
             self.response = b"".join(fragments)
             self.response = HTTPResponse(self.response)

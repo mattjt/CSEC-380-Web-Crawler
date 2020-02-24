@@ -52,7 +52,8 @@ class Request:
             custom_headers = {}
 
         default_headers = {
-            'User-Agent': 'csec-380_hw3_scraper'
+            'User-Agent': 'csec-380_hw3_scraper',
+            'Connection': 'close'
         }
         headers = {**default_headers, **custom_headers}
 
@@ -65,7 +66,8 @@ class Request:
             custom_headers = {}
 
         default_headers = {
-            'User-Agent': 'csec-380_hw3_scraper'
+            'User-Agent': 'csec-380_hw3_scraper',
+            'Connection': 'close'
         }
         headers = {**default_headers, **custom_headers}
 

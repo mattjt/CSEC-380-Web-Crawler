@@ -2,3 +2,4 @@ venv
 .idea
 companies.csv
 hw3/output
+*__pycache*

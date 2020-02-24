@@ -13,7 +13,7 @@ from HTTP import request
 mutex = Lock()
 crawled_uris = Queue()
 uris_to_crawl = Queue()
-LIMIT_TO_BASE_URI = True
+LIMIT_TO_BASE_URI = [True]
 MAX_DEPTH = [1000]
 
 
@@ -87,7 +87,7 @@ def crawl_uri(current_node):
         node = Node(href, current_node.depth + 1, current_node)
 
         # Determine if we are scoping URLs
-        if LIMIT_TO_BASE_URI:
+        if LIMIT_TO_BASE_URI[0]:
             # Determine if the current URL falls into our scope
             parsed_href = urlparse(href)
             if parsed_href.netloc == base_uri.netloc:
@@ -107,15 +107,17 @@ def crawl_uri(current_node):
     mutex.release()
 
 
-def crawl(start_uri, max_depth=1000):
+def crawl(start_uri, max_depth=1000, limit_to_base_uri=True):
     """
     Crawl a URL to a given depth
 
     :param start_uri: The URI to start crawling a site from
     :param max_depth: Maximum number of pages away from the start URI to crawl to
+    :param limit_to_base_uri Should the search be limited to just domains the same as the starting URI
     :return:
     """
     MAX_DEPTH[0] = max_depth
+    LIMIT_TO_BASE_URI[0] = limit_to_base_uri
     root = Node(start_uri, 0, None)
     mutex.acquire()
     uris_to_crawl.put(root)

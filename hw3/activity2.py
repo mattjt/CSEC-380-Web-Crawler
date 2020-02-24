@@ -8,7 +8,7 @@ def main():
     Activity 2
     """
 
-    crawler.crawl("https://www.rit.edu", max_depth=2)
+    crawler.crawl("https://www.rit.edu", max_depth=4)
 
 
 if __name__ == '__main__':

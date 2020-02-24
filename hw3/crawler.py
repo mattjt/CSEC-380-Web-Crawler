@@ -1,7 +1,10 @@
 # author: Matthew Turi <mxt9495@rit.edu>
 import concurrent
 import multiprocessing
+import re
 from concurrent.futures.thread import ThreadPoolExecutor
+from datetime import datetime
+from pathlib import Path
 from queue import Queue
 from threading import Lock
 from urllib.parse import urlparse
@@ -13,8 +16,10 @@ from HTTP import request
 mutex = Lock()
 crawled_uris = Queue()
 uris_to_crawl = Queue()
+harvested_emails = set()
 LIMIT_TO_BASE_URI = [True]
 MAX_DEPTH = [1000]
+EMAIL_REGEX = b"""(?:[a-z0-9!#$%&'*+\/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+\/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])"""
 
 
 class Node:
@@ -22,6 +27,15 @@ class Node:
         self.name = name
         self.depth = depth
         self.parent = parent
+
+    def __repr__(self):
+        return self.name
+
+
+class Email:
+    def __init__(self, name, depth):
+        self.name = name
+        self.depth = depth
 
     def __repr__(self):
         return self.name
@@ -44,6 +58,28 @@ def add_new_uri_to_crawl(node):
         mutex.release()
 
 
+def add_harvested_email(node):
+    """
+    Add a new URL to the set of URLs we need to crawl if it hasn't been added already
+
+    :param node: Node to add
+    :return: Nothing
+    """
+
+    Path("./output").mkdir(exist_ok=True)
+
+    if not (any(node.name == n.name for n in harvested_emails)):
+        mutex.acquire()
+        harvested_emails.add(node)
+        mutex.release()
+
+        with open('./output/depth-{0}.txt'.format(node.depth), 'a') as f:
+            f.write("{0}\n".format(node.name))
+            f.close()
+
+        print(node.name)
+
+
 def crawl_uri(current_node):
     """
     Extract all the links from a webpage
@@ -52,7 +88,7 @@ def crawl_uri(current_node):
     :return: nothing
     """
 
-    if current_node.depth >= MAX_DEPTH[0]:
+    if current_node.depth > MAX_DEPTH[0]:
         mutex.acquire()
         uris_to_crawl.task_done()
         mutex.release()
@@ -72,6 +108,11 @@ def crawl_uri(current_node):
         mutex.release()
         return
 
+    # Harvest emails
+    for email in re.finditer(EMAIL_REGEX, a.data):
+        add_harvested_email(Email((email.group()).decode(), current_node.depth))
+
+    # Harvest links
     for link in soup.findAll('a'):
         href = link.get('href')
 
@@ -116,6 +157,8 @@ def crawl(start_uri, max_depth=1000, limit_to_base_uri=True):
     :param limit_to_base_uri Should the search be limited to just domains the same as the starting URI
     :return:
     """
+    current_time = datetime.now().strftime("%H:%M:%S")
+    print("Starting crawl at {0}...".format(current_time))
     MAX_DEPTH[0] = max_depth
     LIMIT_TO_BASE_URI[0] = limit_to_base_uri
     root = Node(start_uri, 0, None)
@@ -139,5 +182,4 @@ def crawl(start_uri, max_depth=1000, limit_to_base_uri=True):
 
             concurrent.futures.wait(threads)
 
-    for item in crawled_uris.queue:
-        print(item)
+    print("\nFinished crawling at {0}".format(current_time))

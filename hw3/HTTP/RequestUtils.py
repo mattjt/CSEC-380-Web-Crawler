@@ -46,7 +46,7 @@ class HTTPResponse:
             if not status_line_parsed:
                 line = line.decode("utf-8")
                 status_line_parsed = True
-                tmp = line.split(" ")
+                tmp = line.split(" ", 2)
                 self.http_version = tmp[0]
                 self.status_code = tmp[1]
                 self.reason_phrase = tmp[2]
@@ -94,6 +94,8 @@ class HTTPRequest:
     def __repr__(self):
         if self.uri.parsed.query != '':
             request = "{0} {1}?{2} HTTP/1.1\r\n".format(self.method, self.uri.parsed.path, self.uri.parsed.query)
+        elif self.uri.parsed.path == '':
+            request = "{0} / HTTP/1.1\r\n".format(self.method)
         else:
             request = "{0} {1} HTTP/1.1\r\n".format(self.method, self.uri.parsed.path)
 

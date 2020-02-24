@@ -20,11 +20,11 @@ def main():
 
         counter = 0
         for row in csv_reader:
-            if counter >= 25:
-                break
-            else:
-                counter += 1
-                companies.put(row)
+            # if counter >= 25:
+            #     break
+            # else:
+            #     counter += 1
+            companies.put(row)
 
     # We're running 1 thread per core on the system
     max_num_threads = multiprocessing.cpu_count()

@@ -5,3 +5,5 @@ services:
   # hw3 - python 3
   hw3:
     build: ./hw3
+    volumes:
+      - ./output:/usr/src/app/output

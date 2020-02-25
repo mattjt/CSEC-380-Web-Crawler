@@ -20,11 +20,11 @@ def main():
 
         counter = 0
         for row in csv_reader:
-            # if counter >= 25:
-            #     break
-            # else:
-            #     counter += 1
-            companies.put(row)
+            if counter >= 25:
+                break
+            else:
+                counter += 1
+                companies.put(row)
 
     # We're running 1 thread per core on the system
     max_num_threads = multiprocessing.cpu_count()
@@ -42,6 +42,11 @@ def main():
 
         concurrent.futures.wait(threads)
     print("Finished crawl at {0}".format(datetime.now().strftime("%H:%M:%S")))
+    print("Starting output parse at {0}".format(datetime.now().strftime("%H:%M:%S")))
+    import parser
+    parser.main()
+    print("Output parse finished at {0}".format(datetime.now().strftime("%H:%M:%S")))
+    print('"./output/paths.list" has been created')
 
 
 if __name__ == '__main__':

@@ -21,6 +21,11 @@ def spawn_crawler(crawler_meta):
 
 
 class CrawlerMeta:
+    """
+    Stores meta information about the site we'd like to crawl and the configuration
+    options that the crawl was started with
+    """
+
     def __init__(self, filename, start_uri, max_depth=1000, limit_to_base_uri=True):
         self.filename = filename
         self.start_uri = start_uri

@@ -1,0 +1,9 @@
+# Maintainer: Matthew Turi <mxt9495@rit.edu>
+version: "3.7"
+
+services:
+  # hw3 - python 3
+  hw3:
+    build: ./hw3
+    volumes:
+      - ./output:/usr/src/app/output

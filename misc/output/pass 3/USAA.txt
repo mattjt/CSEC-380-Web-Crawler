@@ -1,0 +1,15 @@
+/inet/ent_home/CpHome
+/inet/wc/about_usaa_main
+/inet/pages/security_protect_your_personal_information
+/careers
+/inet/pages/accessibility_at_usaa_main
+/inet/pages/ContactUsMain
+/inet/pages/site_map
+/inet/mc_faq/McFAQ
+/inet/pages/site_terms_and_conditions_main
+/inet/wc/usaa_mobile_main
+/inet/wc/global-community-bar-fb-redirect
+/inet/wc/global-community-bar-tw-redirect
+/inet/wc/global-community-bar-yt-redirect
+/inet/wc/usaa_mobile_main
+/inet/pages/security_online_information_gathering

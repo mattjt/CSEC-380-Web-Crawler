@@ -2,7 +2,6 @@
 import socket
 import ssl
 from urllib.parse import ParseResult
-import sys
 
 REDIRECT_STATUS_CODES = [301, 302, 307, 308]
 MAX_REDIRECTS = 4
@@ -25,44 +24,40 @@ class HTTPResponse:
     Abstracted representation of an HTTP response
     """
 
-    def __init__(self, resp_content, ignore_body=False):
+    def __init__(self, resp_content):
         """
         :param resp_content: Raw unparsed content of an HTTP response
         """
         self.http_version = self.status_code = self.reason_phrase = ""
         self.headers = {}
         self.data = bytes()
-        self.ignore_body = ignore_body
         self.__parse(resp_content)
 
     def __parse(self, content):
         parts = content.split(b"\r\n\r\n", 1)
         headers = parts[0].splitlines()
+        body = parts[1]
 
         status_line_parsed = False
         for line in headers:
-            try:
-                # status line
-                if not status_line_parsed:
-                    line = line.decode("utf-8")
-                    status_line_parsed = True
-                    tmp = line.split(" ", 2)
-                    self.http_version = tmp[0]
-                    self.status_code = tmp[1]
-                    self.reason_phrase = tmp[2]
+            # line = line.decode("utf-8")
 
-                # other header
-                elif len(line) != 0:
-                    line = line.decode("utf-8")
-                    tmp = line.split(":", 1)
-                    self.headers[tmp[0]] = tmp[1].strip()
-            except IndexError:
-                print("IndexError: {0}".format(line), file=sys.stderr)
+            # status line
+            if not status_line_parsed:
+                line = line.decode("utf-8")
+                status_line_parsed = True
+                tmp = line.split(" ", 2)
+                self.http_version = tmp[0]
+                self.status_code = tmp[1]
+                self.reason_phrase = tmp[2]
 
-        if self.ignore_body:
-            self.data = ''
-        else:
-            self.data = parts[1]
+            # other header
+            elif len(line) != 0:
+                line = line.decode("utf-8")
+                tmp = line.split(":", 1)
+                self.headers[tmp[0]] = tmp[1].strip()
+
+        self.data = body
 
     def __repr__(self):
         response = "{0} {1} {2}\r\n".format(self.http_version, self.status_code, self.reason_phrase)
@@ -81,7 +76,7 @@ class HTTPRequest:
     Abstracted representation of an HTTP request
     """
 
-    def __init__(self, uri, method, headers=None, data=None, ignore_body=False):
+    def __init__(self, uri, method, headers=None, data=None):
         if headers is None:
             headers = {}
         if data is None:
@@ -95,7 +90,6 @@ class HTTPRequest:
         self.response = ""
         self.headers = headers
         self.data = data
-        self.ignore_body = ignore_body
 
     def __repr__(self):
         if self.uri.parsed.query != '':
@@ -110,7 +104,7 @@ class HTTPRequest:
         for header, value in self.headers.items():
             request += "{0}: {1}\r\n".format(header, value)
 
-        if (not self.ignore_body) and self.data is not None:
+        if self.data is not None:
             request += "Content-Length: {0}\r\n\r\n".format(len(self.__get_msg_body()))
             request += self.__get_msg_body()
             request += "\r\n"
@@ -130,7 +124,8 @@ class HTTPRequest:
         Sends the HTTP request
         """
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.connect((self.uri.parsed.hostname, self.uri.port))
+            s.connect((self.uri.parsed.netloc, self.uri.port))
+
             if self.uri.port == 443 or self.uri.parsed.scheme == "https":
                 s = ssl.wrap_socket(s, keyfile=None, certfile=None, server_side=False, cert_reqs=ssl.CERT_NONE,
                                     ssl_version=ssl.PROTOCOL_SSLv23)
@@ -146,6 +141,6 @@ class HTTPRequest:
             s.close()
 
             self.response = b"".join(fragments)
-            self.response = HTTPResponse(self.response, ignore_body=self.ignore_body)
+            self.response = HTTPResponse(self.response)
 
         return self

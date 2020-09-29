@@ -29,13 +29,10 @@ class Request:
 
     def response_handler(self, http_request, redirect_count=None):
         # Check if the response we got was a redirect
-        try:
-            if self.FOLLOW_REDIRECTS and int(http_request.response.status_code) in REDIRECT_STATUS_CODES:
-                return self.follow_redirect(http_request, http_request.response, redirect_count)
-            else:
-                return http_request
-        except ValueError:
-            pass
+        if self.FOLLOW_REDIRECTS and int(http_request.response.status_code) in REDIRECT_STATUS_CODES:
+            return self.follow_redirect(http_request, http_request.response, redirect_count)
+        else:
+            return http_request
 
     @staticmethod
     def parse_uri(uri):
@@ -50,7 +47,7 @@ class Request:
 
         return URI(parsed_uri, port)
 
-    def get(self, uri, custom_headers=None, ignore_body=False):
+    def get(self, uri, custom_headers=None):
         if custom_headers is None:
             custom_headers = {}
 
@@ -60,7 +57,7 @@ class Request:
         }
         headers = {**default_headers, **custom_headers}
 
-        r = HTTPRequest(self.parse_uri(uri), 'GET', headers=headers, ignore_body=ignore_body).send()
+        r = HTTPRequest(self.parse_uri(uri), 'GET', headers=headers).send()
 
         return self.response_handler(r)
 
